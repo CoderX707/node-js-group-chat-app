@@ -5,6 +5,12 @@ const cors = require("cors");
 const http = require("http");
 const socketIo = require("socket.io");
 
+const authRoutes = require("./routes/authRoutes");
+const groupRoutes = require("./routes/groupRoutes");
+const Message = require("./models/Message");
+const User = require("./models/User");
+const Group = require("./models/Group");
+
 const app = express();
 require("dotenv").config();
 
@@ -17,9 +23,6 @@ mongoose
 app.use(bodyParser.json());
 app.use(cors());
 
-const authRoutes = require("./routes/authRoutes");
-const groupRoutes = require("./routes/groupRoutes");
-
 app.use("/api/auth", authRoutes);
 app.use("/api/groups", groupRoutes);
 
@@ -28,60 +31,32 @@ const PORT = process.env.PORT || 5000;
 const server = http.createServer(app);
 const io = socketIo(server);
 
-const users = {};
-const groups = {};
-const groupMessages = {};
-
-io.on('connection', (socket) => {
-  console.log('A user connected');
-
-  socket.on('joinRoom', ({ groupId, userId }) => {
-    if (groups[groupId]) {
-      groups[groupId].push(userId);
-    } else {
-      groups[groupId] = [userId];
-    }
-    users[userId] = socket.id;
-
-    socket.join(groupId);
-    console.log('joinRoom', userId, groupId);
-
-    if (groupMessages[groupId]) {
-      groupMessages[groupId].forEach((message) => {
-        socket.emit('message', message);
+io.on("connection", (socket) => {
+  socket.on("joinRoom", async ({ groupId, userId }) => {
+    try {
+      const messages = await Message.find({ groupId });
+      messages.forEach((message) => {
+        socket.emit("message", message);
       });
+
+      socket.join(groupId);
+    } catch (error) {
+      console.error("Error joining room:", error);
     }
   });
 
-  socket.on('chatMessage', ({ groupId, message, userId }) => {
-    console.log('chatMessage', groupId, message, userId);
-
-    const newMessage = { message, userId, timestamp: new Date() };
-
-    if (!groupMessages[groupId]) {
-      groupMessages[groupId] = [newMessage];
-    } else {
-      groupMessages[groupId].push(newMessage);
+  socket.on("chatMessage", async ({ groupId, message, userId }) => {
+    try {
+      const newMessage = new Message({ groupId, message, userId });
+      const savedMessage = await newMessage.save();
+      io.to(groupId).emit("message", savedMessage);
+    } catch (error) {
+      console.error("Error saving message to the database:", error);
     }
-
-    io.to(groupId).emit('message', newMessage);
   });
 
-  socket.on('disconnect', () => {
-    console.log('A user disconnected');
-    const userId = Object.keys(users).find((key) => users[key] === socket.id);
-    if (userId) {
-      for (const groupId in groups) {
-        if (groups[groupId].includes(userId)) {
-          groups[groupId] = groups[groupId].filter((id) => id !== userId);
-          if (groups[groupId].length === 0) {
-            delete groups[groupId];
-          }
-          break;
-        }
-      }
-      delete users[userId];
-    }
+  socket.on("disconnect", async () => {
+    console.log("User disconnected");
   });
 });
 
