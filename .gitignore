@@ -1,0 +1,28 @@
+# Ignore node_modules directory in the root
+node_modules/
+
+# Ignore node_modules directory in the server folder
+server/node_modules/
+
+# Ignore node_modules directory in the client folder
+chat-app/node_modules/
+
+# Ignore log files, build artifacts, and any generated files
+*.log
+build
+dist
+coverage
+
+# Ignore environment-specific files
+*.env
+*.env.local
+*.env.development
+*.env.test
+*.env.production
+
+# Ignore npm debug log
+npm-debug.log*
+
+.vscode
+
+package-lock.json
