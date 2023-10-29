@@ -15,7 +15,6 @@ function authorizeUser(req, res, next) {
 }
 
 function adminAuthMiddleware(req, res, next) {
-  console.log(req.user);
   if (req.user && req.user.isAdmin === true) {
     next();
   } else {

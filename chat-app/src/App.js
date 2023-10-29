@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import LoginForm from "./pages/login";
 import Dashboard from "./pages/dashboard";
 import { checkAuth, loginRequest, logoutRequest } from "./Helpers";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const LOGIN_PAGE = "login";
 const DASHBOARD_PAGE = "dashboard";
@@ -21,10 +23,12 @@ function App() {
       {currentPage === LOGIN_PAGE ? (
         <LoginForm
           submitCallback={async (value) => {
-            console.log(value);
             const result = await loginRequest(value);
             if (result && result.success) {
               setCurrentPage(DASHBOARD_PAGE);
+              toast("Login success");
+            } else {
+              toast("Please check your credentials");
             }
           }}
         />
@@ -36,6 +40,7 @@ function App() {
           }}
         />
       ) : null}
+      <ToastContainer />
     </div>
   );
 }

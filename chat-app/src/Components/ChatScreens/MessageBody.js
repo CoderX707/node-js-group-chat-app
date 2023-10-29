@@ -1,7 +1,6 @@
 import React from "react";
 
 export default function MessageBody({ chat, userId }) {
-  console.log(chat);
   return (
     <>
       <div
