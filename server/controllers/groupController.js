@@ -46,11 +46,20 @@ exports.delete = async (req, res) => {
 
 exports.search = async (req, res) => {
   try {
-    const searchQuery = req.query.name;
-    const groups = await Group.find({
-      $or: [{ name: { $regex: searchQuery, $options: "i" } }],
-    });
-    res.json(groups);
+    if (req.user.isAdmin) {
+      const groups = await Group.find({});
+      res.json(groups);
+    } else {
+      const userId = req.user.id;
+      const searchQuery = req.query.name;
+      const groups = await Group.find({
+        $and: [
+          { $or: [{ name: { $regex: searchQuery, $options: "i" } }] },
+          { members: userId },
+        ],
+      });
+      res.json(groups);
+    }
   } catch (error) {
     res.status(500).json({ message: "Error searching for groups" });
   }
